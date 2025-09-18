@@ -1,0 +1,15 @@
+unzip
+wget
+curl
+chromium-browser
+chromium-chromedriver
+libglib2.0-0
+libnss3
+libgconf-2-4
+libfontconfig1
+libxi6
+libxcursor1
+libxrandr2
+libxss1
+libxtst6
+fonts-liberation
