@@ -173,9 +173,6 @@ else:
             listing['order']    = row['Order']
             listing['url']      = row['URL']
 
-            with st.expander(label=f"{row['Address']}"):
-                    components.iframe(src=row['URL'], height=375, scrolling=True)
-
             listings.append(listing)
         
         listing_df = pd.DataFrame(listings)
