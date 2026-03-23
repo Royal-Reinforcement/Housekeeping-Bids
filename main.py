@@ -6,6 +6,8 @@ import streamlit.components.v1 as components
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 import time
 
 
@@ -46,34 +48,45 @@ def submit_to_smartsheet(df):
 
 
 
-@st.cache_data(ttl=300)
-def loading_details(url):
+@st.cache_resource
+def get_driver():
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
 
-    driver = webdriver.Chrome(options=chrome_options)
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+
+    return driver
+
+
+
+
+
+def get_listing_details(driver, url):
+    driver.get(url)
+    time.sleep(1.5)  # slightly reduced
 
     try:
-        driver.get(url)
-        time.sleep(2)
+        bedrooms = driver.find_element(By.XPATH, "//*[@id='page-content']/div/main/div[2]/article/footer/div[1]/div[4]/div[1]").text
+        bathrooms = driver.find_element(By.XPATH, "//*[@id='page-content']/div/main/div[2]/article/footer/div[1]/div[4]/div[2]").text
+        sleeps = driver.find_element(By.XPATH, "//*[@id='page-content']/div/main/div[2]/article/footer/div[1]/div[4]/div[3]").text
 
-        bedrooms    = driver.find_element(By.XPATH, "//*[@id='page-content']/div/main/div[2]/article/footer/div[1]/div[4]/div[1]").text
-        bathrooms   = driver.find_element(By.XPATH, "//*[@id='page-content']/div/main/div[2]/article/footer/div[1]/div[4]/div[2]").text
-        sleeps      = driver.find_element(By.XPATH, "//*[@id='page-content']/div/main/div[2]/article/footer/div[1]/div[4]/div[3]").text
-        images      = driver.find_elements(By.XPATH, "//img[@class='rsImg rsMainSlideImage']")
-        images      = [img.get_attribute("src") for img in images]
+        images = driver.find_elements(By.XPATH, "//img[@class='rsImg rsMainSlideImage']")
+        images = [img.get_attribute("src") for img in images]
 
-        return {
-            'bedrooms': bedrooms,
-            'bathrooms': bathrooms,
-            'sleeps': sleeps,
-            'images': images,
-            }
-    finally:
-        driver.quit()
+    except Exception:
+        # Fail gracefully instead of crashing whole app
+        bedrooms, bathrooms, sleeps, images = "N/A", "N/A", "N/A", []
+
+    return {
+        'bedrooms': bedrooms,
+        'bathrooms': bathrooms,
+        'sleeps': sleeps,
+        'images': images,
+    }
 
 
 
@@ -166,14 +179,21 @@ else:
         area     = ''
         listings = []
 
+        driver = get_driver()
+
+        listings = []
+
         for index, row in df.iterrows():
-            listing             = loading_details(row['URL'])
-            listing['area']     = row['Area']
-            listing['address']  = row['Address']
-            listing['order']    = row['Order']
-            listing['url']      = row['URL']
+            listing = get_listing_details(driver, row['URL'])
+
+            listing['area'] = row['Area']
+            listing['address'] = row['Address']
+            listing['order'] = row['Order']
+            listing['url'] = row['URL']
 
             listings.append(listing)
+
+            time.sleep(0.5)  # prevents rate-limiting
         
         listing_df = pd.DataFrame(listings)
         listing_df = listing_df.sort_values(by=['order'])
