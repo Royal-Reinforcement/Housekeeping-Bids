@@ -139,7 +139,7 @@ else:
                 st.write(f'**{row['Address']}**')
 
                 with st.expander(label=f"Listing"):
-                    components.iframe(src=row['URL'], height=375, scrolling=True)
+                    components.iframe(src=row['URL'], height=500, scrolling=True)
 
                 bid = st.number_input(f"{dictionary[language]['bid_amount']} **{row['Address']}** {dictionary[language]['for']}:", min_value=0.00, value=0.00, step=5.00, key=f'bid_{index}')
                 bids.append(bid)
