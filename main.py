@@ -43,7 +43,7 @@ def submit_to_smartsheet(df):
 
 APP_NAME = 'Housekeeping Bids'
 
-st.set_page_config(page_title=APP_NAME, page_icon='🏠', layout='centered')
+st.set_page_config(page_title=APP_NAME, page_icon='🏠', layout='wide')
 
 st.image(st.secrets['images']["rd_logo"], width=100)
 
