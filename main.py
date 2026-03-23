@@ -3,13 +3,6 @@ import pandas as pd
 import smartsheet
 import streamlit.components.v1 as components
 
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-import time
-
 
 
 
@@ -44,49 +37,6 @@ def submit_to_smartsheet(df):
 
     smartsheet_client.Sheets.add_rows(st.secrets['smartsheet']['sheets']['submissions'], rows)
 
-
-
-
-
-@st.cache_resource
-def get_driver():
-    chrome_options = Options()
-    chrome_options.add_argument("--headless=new")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-
-    return driver
-
-
-
-
-
-def get_listing_details(driver, url):
-    driver.get(url)
-    time.sleep(1.5)  # slightly reduced
-
-    try:
-        bedrooms = driver.find_element(By.XPATH, "//*[@id='page-content']/div/main/div[2]/article/footer/div[1]/div[4]/div[1]").text
-        bathrooms = driver.find_element(By.XPATH, "//*[@id='page-content']/div/main/div[2]/article/footer/div[1]/div[4]/div[2]").text
-        sleeps = driver.find_element(By.XPATH, "//*[@id='page-content']/div/main/div[2]/article/footer/div[1]/div[4]/div[3]").text
-
-        images = driver.find_elements(By.XPATH, "//img[@class='rsImg rsMainSlideImage']")
-        images = [img.get_attribute("src") for img in images]
-
-    except Exception:
-        # Fail gracefully instead of crashing whole app
-        bedrooms, bathrooms, sleeps, images = "N/A", "N/A", "N/A", []
-
-    return {
-        'bedrooms': bedrooms,
-        'bathrooms': bathrooms,
-        'sleeps': sleeps,
-        'images': images,
-    }
 
 
 
@@ -177,48 +127,23 @@ else:
 
         bids     = []
         area     = ''
-        listings = []
 
-        driver = get_driver()
-
-        listings = []
-
-        for index, row in df.iterrows():
-            listing = get_listing_details(driver, row['URL'])
-
-            listing['area'] = row['Area']
-            listing['address'] = row['Address']
-            listing['order'] = row['Order']
-            listing['url'] = row['URL']
-
-            listings.append(listing)
-
-            time.sleep(0.5)  # prevents rate-limiting
-        
-        listing_df = pd.DataFrame(listings)
-        listing_df = listing_df.sort_values(by=['order'])
+        df
 
         with st.form(key='bids_form', enter_to_submit=False):
             st.caption(dictionary[language]['properties_listed'])
-            for index, row in listing_df.iterrows():
+            for index, row in df.iterrows():
 
-                if area != row['area']:
-                    area = row['area']
+                if area != row['Area']:
+                    area = row['Area']
                     st.subheader(f'**{area}**')
 
-                st.write(f'**{row['address']}**')
+                st.write(f'**{row['Address']}**')
 
-                l, lm, rm, r = st.columns([1,1,1,2])
-                l.write(f'🛏️ {row['bedrooms']}')
-                lm.write(f'🛁 {row['bathrooms']}')
-                rm.write(f'👥 {row['sleeps']}')
-                r.link_button(f'{dictionary[language]['view_full_listing']}', row['url'], type='secondary', width='stretch')
+                with st.expander(label=f"Listing"):
+                    components.iframe(src=row['URL'], height=375, scrolling=True)
 
-                with st.expander(label="Photos"):
-                    for image in row['images']:
-                        st.image(image, width='stretch')
-
-                bid = st.number_input(f"{dictionary[language]['bid_amount']} **{row['address']}** {dictionary[language]['for']}:", min_value=0.00, value=0.00, step=5.00, key=f'bid_{index}')
+                bid = st.number_input(f"{dictionary[language]['bid_amount']} **{row['Address']}** {dictionary[language]['for']}:", min_value=0.00, value=0.00, step=5.00, key=f'bid_{index}')
                 bids.append(bid)
             
             submit_button = st.form_submit_button(label=dictionary[language]['submit_button'], disabled=st.session_state.submitted, width='stretch', type='primary')
