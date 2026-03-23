@@ -128,8 +128,6 @@ else:
         bids     = []
         area     = ''
 
-        df
-
         with st.form(key='bids_form', enter_to_submit=False):
             st.caption(dictionary[language]['properties_listed'])
             for index, row in df.iterrows():
