@@ -1,5 +1,3 @@
 streamlit
 pandas
 smartsheet-python-sdk
-selenium
-webdriver-manager
