@@ -2,7 +2,6 @@ unzip
 wget
 curl
 libnss3
-libgconf-2-4
 libfontconfig1
 libxi6
 libxcursor1
